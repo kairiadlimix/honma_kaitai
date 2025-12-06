@@ -1,0 +1,24 @@
+# 機密情報
+*.pdf
+本間解体工業_*.pdf
+latest_*.pdf
+
+# 環境変数
+.env
+.env.local
+.env*.local
+
+# エディタ
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# ログ
+*.log
+

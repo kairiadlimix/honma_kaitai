@@ -1,0 +1,116 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 重機マスタ
+model Machine {
+  machineId        String   @id @map("machine_id") @db.VarChar(50)
+  serialNumber     String?  @unique @map("serial_number") @db.VarChar(100)
+  manufacturer     String   @map("manufacturer") @db.VarChar(20) // コベルコ/日立
+  machineClass     String   @map("machine_class") @db.VarChar(50) // SK235, ZX200など
+  modelType       String?  @map("model_type") @db.VarChar(100)
+  year            Int?
+  purchaseDate    DateTime? @map("purchase_date") @db.Date
+  inspectionDeadline DateTime? @map("inspection_deadline") @db.Date
+  status          String   @default("稼働中") @db.VarChar(20) // 稼働中/整備中/入庫中
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // リレーション
+  operationHours  OperationHour[]
+  maintenances   Maintenance[]
+  consumables    Consumable[]
+
+  @@map("machines")
+  @@index([manufacturer])
+  @@index([machineClass])
+  @@index([status])
+}
+
+// 稼働時間記録
+model OperationHour {
+  id                  BigInt   @id @default(autoincrement())
+  machineId           String   @map("machine_id") @db.VarChar(50)
+  date                DateTime @db.Date
+  operationHours      Decimal  @map("operation_hours") @db.Decimal(5, 2)
+  idleHours           Decimal  @default(0) @map("idle_hours") @db.Decimal(5, 2)
+  totalOperationHours Decimal? @map("total_operation_hours") @db.Decimal(10, 2)
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  machine Machine @relation(fields: [machineId], references: [machineId], onDelete: Cascade)
+
+  @@map("operation_hours")
+  @@unique([machineId, date])
+  @@index([machineId, date])
+  @@index([date])
+}
+
+// メンテナンス記録
+model Maintenance {
+  maintenanceId   String   @id @map("maintenance_id") @db.VarChar(50)
+  machineId       String   @map("machine_id") @db.VarChar(50)
+  maintenanceDate DateTime @map("maintenance_date") @db.Date
+  maintenanceType String   @map("maintenance_type") @db.VarChar(50) // 特自検/オイル交換/部品交換など
+  cost            Decimal  @default(0) @db.Decimal(10, 2)
+  description     String?  @db.Text
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  machine       Machine        @relation(fields: [machineId], references: [machineId], onDelete: Cascade)
+  failureChecks FailureCheck[]
+
+  @@map("maintenances")
+  @@index([machineId])
+  @@index([maintenanceDate])
+  @@index([maintenanceType])
+}
+
+// 不調チェック項目
+model FailureCheck {
+  id            BigInt   @id @default(autoincrement())
+  maintenanceId String   @map("maintenance_id") @db.VarChar(50)
+  machineId     String   @map("machine_id") @db.VarChar(50)
+  checkItem     String   @map("check_item") @db.VarChar(100)
+  hasIssue      Boolean  @default(false) @map("has_issue")
+  severity      Int?     // 1=軽微、5=深刻
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  maintenance Maintenance @relation(fields: [maintenanceId], references: [maintenanceId], onDelete: Cascade)
+
+  @@map("failure_checks")
+  @@index([maintenanceId])
+  @@index([machineId])
+  @@index([hasIssue])
+}
+
+// 消耗品使用記録
+model Consumable {
+  id            BigInt   @id @default(autoincrement())
+  machineId     String   @map("machine_id") @db.VarChar(50)
+  maintenanceId String?  @map("maintenance_id") @db.VarChar(50)
+  consumableType String  @map("consumable_type") @db.VarChar(50) // オイル/フィルター/グリスなど
+  usageDate     DateTime @map("usage_date") @db.Date
+  quantity      Decimal  @db.Decimal(10, 2)
+  unit          String?  @db.VarChar(20)
+  unitPrice     Decimal? @map("unit_price") @db.Decimal(10, 2)
+  totalCost     Decimal? @map("total_cost") @db.Decimal(10, 2)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  machine Machine @relation(fields: [machineId], references: [machineId], onDelete: Cascade)
+
+  @@map("consumables")
+  @@index([machineId])
+  @@index([consumableType])
+  @@index([usageDate])
+}
+
