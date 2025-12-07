@@ -190,6 +190,13 @@ export function generateMonthlyOperationRates(): MonthlyOperationRate[] {
   const today = new Date();
   const totalMachines = 15; // 総重機台数
 
+  // 開始時の稼働率（11ヶ月前）
+  const startRate = 52.0;
+  // 現在の稼働率（今月）
+  const endRate = 68.5;
+  // 月ごとの上昇率
+  const monthlyIncrease = (endRate - startRate) / 11;
+
   for (let i = 11; i >= 0; i--) {
     const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
     const year = date.getFullYear();
@@ -197,10 +204,11 @@ export function generateMonthlyOperationRates(): MonthlyOperationRate[] {
     const monthStr = `${year}-${String(month).padStart(2, '0')}`;
     const monthLabel = `${year}年${month}月`;
 
-    // ランダムな稼働率を生成（50%〜80%の範囲、少し変動を持たせる）
-    const baseRate = 65;
-    const variation = (Math.random() - 0.5) * 20; // -10%〜+10%の変動
-    const operationRate = Math.max(50, Math.min(80, baseRate + variation));
+    // 徐々に上がる稼働率を計算（過去から現在に向かって上昇）
+    const baseRate = startRate + (11 - i) * monthlyIncrease;
+    // 小さな自然な変動を追加（±2%程度）
+    const variation = (Math.random() - 0.5) * 4; // -2%〜+2%の変動
+    const operationRate = Math.max(50, Math.min(75, baseRate + variation));
     
     // 稼働中台数を計算
     const operatingMachines = Math.round((operationRate / 100) * totalMachines);
