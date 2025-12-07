@@ -9,6 +9,7 @@ export interface Machine {
   purchaseDate?: string; // 購入年月日
   inspectionDeadline?: string; // 特自検期限
   status: string; // ステータス（稼働中/整備中/入庫中）
+  statusUpdatedAt?: string; // ステータス更新日時（ISO 8601形式）
 }
 
 // 稼働時間記録

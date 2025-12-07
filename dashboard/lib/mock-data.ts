@@ -15,6 +15,30 @@ export const mockDashboardSummary: DashboardSummary = {
   lowOperationRateMachines: 5,
 };
 
+// ステータス更新時刻を生成するヘルパー関数
+function generateStatusUpdatedAt(status: string): string {
+  const now = new Date();
+  let daysAgo: number;
+  
+  // ステータスに応じて更新時刻を変える
+  // 整備中は最近更新された可能性が高い、稼働中は少し前でも良い
+  if (status === '整備中') {
+    daysAgo = Math.random() * 3; // 0-3日前
+  } else if (status === '入庫中') {
+    daysAgo = Math.random() * 14 + 7; // 7-21日前
+  } else {
+    daysAgo = Math.random() * 7; // 0-7日前
+  }
+  
+  const updatedAt = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+  // 時刻もランダムに（9時〜18時の間）
+  updatedAt.setHours(9 + Math.floor(Math.random() * 9));
+  updatedAt.setMinutes(Math.floor(Math.random() * 60));
+  updatedAt.setSeconds(Math.floor(Math.random() * 60));
+  
+  return updatedAt.toISOString();
+}
+
 // 重機マスタのモックデータ
 export const mockMachines: Machine[] = [
   {
@@ -27,6 +51,7 @@ export const mockMachines: Machine[] = [
     purchaseDate: '2018/04/01',
     inspectionDeadline: '2024/12/31',
     status: '稼働中',
+    statusUpdatedAt: generateStatusUpdatedAt('稼働中'),
   },
   {
     machineId: 'SK-002',
@@ -38,6 +63,7 @@ export const mockMachines: Machine[] = [
     purchaseDate: '2019/06/15',
     inspectionDeadline: '2024/11/30',
     status: '稼働中',
+    statusUpdatedAt: generateStatusUpdatedAt('稼働中'),
   },
   {
     machineId: 'SK-003',
@@ -49,6 +75,7 @@ export const mockMachines: Machine[] = [
     purchaseDate: '2017/03/20',
     inspectionDeadline: '2024/10/31',
     status: '整備中',
+    statusUpdatedAt: generateStatusUpdatedAt('整備中'),
   },
   {
     machineId: 'ZX-001',
@@ -60,6 +87,7 @@ export const mockMachines: Machine[] = [
     purchaseDate: '2018/07/01',
     inspectionDeadline: '2024/12/15',
     status: '稼働中',
+    statusUpdatedAt: generateStatusUpdatedAt('稼働中'),
   },
   {
     machineId: 'ZX-002',
@@ -71,6 +99,7 @@ export const mockMachines: Machine[] = [
     purchaseDate: '2019/09/20',
     inspectionDeadline: '2024/11/20',
     status: '稼働中',
+    statusUpdatedAt: generateStatusUpdatedAt('稼働中'),
   },
   {
     machineId: 'ZX-003',
@@ -82,6 +111,7 @@ export const mockMachines: Machine[] = [
     purchaseDate: '2017/11/10',
     inspectionDeadline: '2024/10/15',
     status: '稼働中',
+    statusUpdatedAt: generateStatusUpdatedAt('稼働中'),
   },
   {
     machineId: 'ZX-004',
@@ -93,6 +123,7 @@ export const mockMachines: Machine[] = [
     purchaseDate: '2020/02/28',
     inspectionDeadline: '2025/02/28',
     status: '入庫中',
+    statusUpdatedAt: generateStatusUpdatedAt('入庫中'),
   },
   {
     machineId: 'SK-004',
@@ -104,6 +135,7 @@ export const mockMachines: Machine[] = [
     purchaseDate: '2020/05/10',
     inspectionDeadline: '2025/01/31',
     status: '稼働中',
+    statusUpdatedAt: generateStatusUpdatedAt('稼働中'),
   },
   {
     machineId: 'SK-005',
@@ -115,6 +147,7 @@ export const mockMachines: Machine[] = [
     purchaseDate: '2016/08/25',
     inspectionDeadline: '2024/09/30',
     status: '稼働中',
+    statusUpdatedAt: generateStatusUpdatedAt('稼働中'),
   },
   {
     machineId: 'ZX-005',
@@ -126,6 +159,7 @@ export const mockMachines: Machine[] = [
     purchaseDate: '2018/12/05',
     inspectionDeadline: '2024/12/05',
     status: '稼働中',
+    statusUpdatedAt: generateStatusUpdatedAt('稼働中'),
   },
   {
     machineId: 'SK-006',
@@ -137,6 +171,7 @@ export const mockMachines: Machine[] = [
     purchaseDate: '2019/10/15',
     inspectionDeadline: '2024/12/20',
     status: '稼働中',
+    statusUpdatedAt: generateStatusUpdatedAt('稼働中'),
   },
   {
     machineId: 'SK-007',
@@ -148,6 +183,7 @@ export const mockMachines: Machine[] = [
     purchaseDate: '2021/01/20',
     inspectionDeadline: '2025/01/20',
     status: '稼働中',
+    statusUpdatedAt: generateStatusUpdatedAt('稼働中'),
   },
   {
     machineId: 'ZX-006',
@@ -159,6 +195,7 @@ export const mockMachines: Machine[] = [
     purchaseDate: '2019/08/30',
     inspectionDeadline: '2024/11/10',
     status: '整備中',
+    statusUpdatedAt: generateStatusUpdatedAt('整備中'),
   },
   {
     machineId: 'ZX-007',
@@ -170,6 +207,7 @@ export const mockMachines: Machine[] = [
     purchaseDate: '2020/06/15',
     inspectionDeadline: '2025/03/15',
     status: '稼働中',
+    statusUpdatedAt: generateStatusUpdatedAt('稼働中'),
   },
   {
     machineId: 'SK-008',
@@ -181,6 +219,7 @@ export const mockMachines: Machine[] = [
     purchaseDate: '2018/11/10',
     inspectionDeadline: '2024/12/10',
     status: '稼働中',
+    statusUpdatedAt: generateStatusUpdatedAt('稼働中'),
   },
 ];
 

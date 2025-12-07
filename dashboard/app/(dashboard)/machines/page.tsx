@@ -97,9 +97,22 @@ export default function MachinesPage() {
                     <td className="p-3">{summary.machine.manufacturer}</td>
                     <td className="p-3">{summary.machine.machineClass}</td>
                     <td className="p-3">
-                      <span className={`px-2 py-1 rounded text-sm ${getStatusColor(summary.machine.status)}`}>
-                        {summary.machine.status}
-                      </span>
+                      <div className="flex flex-col gap-1">
+                        <span className={`px-2 py-1 rounded text-sm ${getStatusColor(summary.machine.status)}`}>
+                          {summary.machine.status}
+                        </span>
+                        {summary.machine.statusUpdatedAt && (
+                          <span className="text-xs text-gray-500">
+                            更新: {new Date(summary.machine.statusUpdatedAt).toLocaleString('ja-JP', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="p-3 text-right">{summary.totalOperationHours.toLocaleString()}時間</td>
                     <td className="p-3 text-right">{summary.monthlyOperationHours.toFixed(1)}時間</td>
