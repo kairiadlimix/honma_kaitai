@@ -181,15 +181,6 @@ export function calculateMachineSummaries(): MachineSummary[] {
       })
       .reduce((sum, m) => sum + m.cost, 0);
     
-    // 最終メンテナンス日
-    const lastMaintenance = machineMaintenances
-      .sort((a, b) => new Date(b.maintenanceDate).getTime() - new Date(a.maintenanceDate).getTime())[0];
-    
-    // 最終メンテナンスからの経過日数
-    const daysSinceLastMaintenance = lastMaintenance
-      ? Math.floor((today.getTime() - new Date(lastMaintenance.maintenanceDate).getTime()) / (1000 * 60 * 60 * 24))
-      : 999;
-    
     // 次回メンテナンス予測（過去のメンテナンス間隔の平均から計算）
     let predictedMaintenanceDays = 90; // デフォルト90日
     if (machineMaintenances.length >= 2) {
