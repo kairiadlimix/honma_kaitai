@@ -55,3 +55,12 @@ export interface DashboardSummary {
   lowOperationRateMachines: number;
 }
 
+// 月次稼働率データ
+export interface MonthlyOperationRate {
+  month: string; // YYYY-MM形式
+  monthLabel: string; // "2024年1月"形式
+  operationRate: number; // 稼働率（%）
+  operatingMachines: number; // 稼働中台数
+  totalMachines: number; // 総台数
+}
+

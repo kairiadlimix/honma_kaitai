@@ -1,6 +1,6 @@
 // モックデータ（サンプル画面用）
 
-import { DashboardSummary, Machine, OperationHour, Maintenance, Consumable } from '@/types';
+import { DashboardSummary, Machine, OperationHour, Maintenance, Consumable, MonthlyOperationRate } from '@/types';
 
 // ダッシュボードサマリーのモックデータ
 export const mockDashboardSummary: DashboardSummary = {
@@ -183,4 +183,39 @@ export const mockMachines: Machine[] = [
     status: '稼働中',
   },
 ];
+
+// 月次稼働率のモックデータ（過去12ヶ月分）
+export function generateMonthlyOperationRates(): MonthlyOperationRate[] {
+  const months: MonthlyOperationRate[] = [];
+  const today = new Date();
+  const totalMachines = 15; // 総重機台数
+
+  for (let i = 11; i >= 0; i--) {
+    const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const monthStr = `${year}-${String(month).padStart(2, '0')}`;
+    const monthLabel = `${year}年${month}月`;
+
+    // ランダムな稼働率を生成（50%〜80%の範囲、少し変動を持たせる）
+    const baseRate = 65;
+    const variation = (Math.random() - 0.5) * 20; // -10%〜+10%の変動
+    const operationRate = Math.max(50, Math.min(80, baseRate + variation));
+    
+    // 稼働中台数を計算
+    const operatingMachines = Math.round((operationRate / 100) * totalMachines);
+
+    months.push({
+      month: monthStr,
+      monthLabel,
+      operationRate: Math.round(operationRate * 10) / 10, // 小数点第1位まで
+      operatingMachines,
+      totalMachines,
+    });
+  }
+
+  return months;
+}
+
+export const mockMonthlyOperationRates: MonthlyOperationRate[] = generateMonthlyOperationRates();
 

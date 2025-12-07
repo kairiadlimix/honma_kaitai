@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { KPICard } from '@/components/dashboard/kpi-card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
   Wrench, 
   CheckCircle, 
@@ -13,7 +14,8 @@ import {
   Calendar,
   Activity
 } from 'lucide-react';
-import { DashboardSummary } from '@/types';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { DashboardSummary, MonthlyOperationRate } from '@/types';
 
 async function fetchDashboardSummary(): Promise<DashboardSummary> {
   const res = await fetch('/api/dashboard/summary');
@@ -23,11 +25,25 @@ async function fetchDashboardSummary(): Promise<DashboardSummary> {
   return res.json();
 }
 
+async function fetchMonthlyOperationRate(): Promise<MonthlyOperationRate[]> {
+  const res = await fetch('/api/dashboard/monthly-operation-rate');
+  if (!res.ok) {
+    throw new Error('Failed to fetch monthly operation rate');
+  }
+  return res.json();
+}
+
 export default function DashboardPage() {
   const { data: summary, isLoading, error } = useQuery({
     queryKey: ['dashboard-summary'],
     queryFn: fetchDashboardSummary,
     refetchInterval: 30000, // 30秒ごとに更新
+  });
+
+  const { data: monthlyRates, isLoading: isLoadingRates } = useQuery({
+    queryKey: ['monthly-operation-rate'],
+    queryFn: fetchMonthlyOperationRate,
+    refetchInterval: 30000,
   });
 
   if (isLoading) {
@@ -102,6 +118,58 @@ export default function DashboardPage() {
           color="orange"
         />
       </div>
+
+      {/* 月次稼働率グラフ */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <TrendingUp className="h-5 w-5" />
+            <span>月次稼働率推移</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoadingRates ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="text-gray-500">データを読み込み中...</div>
+            </div>
+          ) : monthlyRates && monthlyRates.length > 0 ? (
+            <ResponsiveContainer width="100%" height={400}>
+              <LineChart data={monthlyRates}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="monthLabel" 
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                  interval={0}
+                />
+                <YAxis 
+                  domain={[0, 100]}
+                  label={{ value: '稼働率 (%)', angle: -90, position: 'insideLeft' }}
+                />
+                <Tooltip 
+                  formatter={(value: number) => `${value}%`}
+                  labelFormatter={(label) => label}
+                />
+                <Legend />
+                <Line 
+                  type="monotone" 
+                  dataKey="operationRate" 
+                  stroke="#3B82F6" 
+                  strokeWidth={3}
+                  name="稼働率"
+                  dot={{ r: 5 }}
+                  activeDot={{ r: 8 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-64">
+              <div className="text-gray-500">データがありません</div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* アラート・通知 */}
       <div className="bg-white rounded-lg border p-6">
