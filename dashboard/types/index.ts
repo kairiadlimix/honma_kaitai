@@ -64,3 +64,37 @@ export interface MonthlyOperationRate {
   totalMachines: number; // 総台数
 }
 
+// 故障リスク要因
+export interface RiskFactor {
+  factor: string; // 要因名（"年式", "稼働率", "メンテナンス頻度"など）
+  value: string | number; // 値
+  impact: 'high' | 'medium' | 'low'; // 影響度
+  description: string; // 説明
+}
+
+// 故障リスク分析データ
+export interface MachineRiskAnalysis {
+  machineId: string;
+  machineClass: string;
+  manufacturer: string;
+  year: number;
+  riskScore: number; // 1-5
+  riskFactors: RiskFactor[]; // リスク要因
+  maintenanceFrequency: number; // 過去6ヶ月のメンテナンス回数
+  totalOperationHours: number; // 累計稼働時間
+  operationRate: number; // 稼働率（%）
+  daysSinceLastMaintenance: number; // 最終メンテナンスからの経過日数
+  recommendedAction: 'maintenance' | 'replacement' | 'monitor'; // 推奨アクション
+  predictedMaintenanceDate?: string; // 次回メンテナンス予測日
+  predictedMaintenanceDays?: number; // 次回メンテナンスまでの予測日数
+}
+
+// メーカー別故障傾向
+export interface ManufacturerRiskTrend {
+  manufacturer: string;
+  averageRiskScore: number;
+  highRiskCount: number; // リスク4以上
+  totalCount: number;
+  machines: MachineRiskAnalysis[];
+}
+
