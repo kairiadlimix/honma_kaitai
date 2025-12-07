@@ -148,12 +148,15 @@ export function calculateMachineSummaries(): MachineSummary[] {
     else if (maintenanceCount >= 2) maintenanceScore = 2;
     else if (maintenanceCount >= 1) maintenanceScore = 1;
     
-    // 最終メンテナンスからの経過日数
-    const lastMaintenance = machineMaintenances
-      .sort((a, b) => new Date(b.maintenanceDate).getTime() - new Date(a.maintenanceDate).getTime())[0];
+    // 最終メンテナンス日を取得
+    const sortedMaintenances = [...machineMaintenances].sort(
+      (a, b) => new Date(b.maintenanceDate).getTime() - new Date(a.maintenanceDate).getTime()
+    );
+    const lastMaintenanceRecord = sortedMaintenances[0];
     
-    const daysSinceLastMaintenance = lastMaintenance
-      ? Math.floor((today.getTime() - new Date(lastMaintenance.maintenanceDate).getTime()) / (1000 * 60 * 60 * 24))
+    // 最終メンテナンスからの経過日数
+    const daysSinceLastMaintenance = lastMaintenanceRecord
+      ? Math.floor((today.getTime() - new Date(lastMaintenanceRecord.maintenanceDate).getTime()) / (1000 * 60 * 60 * 24))
       : 999;
     
     let maintenanceIntervalScore = 0;
@@ -185,13 +188,13 @@ export function calculateMachineSummaries(): MachineSummary[] {
     let predictedMaintenanceDays = 90; // デフォルト90日
     if (machineMaintenances.length >= 2) {
       const intervals: number[] = [];
-      const sortedMaintenances = [...machineMaintenances].sort(
+      const sortedMaintenancesForPrediction = [...machineMaintenances].sort(
         (a, b) => new Date(a.maintenanceDate).getTime() - new Date(b.maintenanceDate).getTime()
       );
-      for (let i = 1; i < sortedMaintenances.length; i++) {
+      for (let i = 1; i < sortedMaintenancesForPrediction.length; i++) {
         const interval = Math.floor(
-          (new Date(sortedMaintenances[i].maintenanceDate).getTime() - 
-           new Date(sortedMaintenances[i - 1].maintenanceDate).getTime()) / (1000 * 60 * 60 * 24)
+          (new Date(sortedMaintenancesForPrediction[i].maintenanceDate).getTime() - 
+           new Date(sortedMaintenancesForPrediction[i - 1].maintenanceDate).getTime()) / (1000 * 60 * 60 * 24)
         );
         intervals.push(interval);
       }
@@ -201,11 +204,6 @@ export function calculateMachineSummaries(): MachineSummary[] {
       }
     }
     
-    const predictedMaintenanceDate = lastMaintenance
-      ? new Date(new Date(lastMaintenance.maintenanceDate).getTime() + predictedMaintenanceDays * 24 * 60 * 60 * 1000)
-          .toISOString().split('T')[0]
-      : undefined;
-    
     return {
       machine,
       totalOperationHours: parseFloat(totalOps.toFixed(1)),
@@ -213,7 +211,7 @@ export function calculateMachineSummaries(): MachineSummary[] {
       operationRate: parseFloat(operationRate.toFixed(1)),
       failureRiskScore,
       yearlyCost,
-      lastMaintenanceDate: lastMaintenance?.maintenanceDate,
+      lastMaintenanceDate: lastMaintenanceRecord?.maintenanceDate,
     };
   });
 }
