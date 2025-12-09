@@ -2,9 +2,10 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, TrendingUp, BarChart3 } from 'lucide-react';
+import { DollarSign, TrendingUp, BarChart3, TrendingDown } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { calculateMachineSummaries } from '@/lib/mock-data-extended';
+import { AIPrediction } from '@/types';
 
 async function fetchCostData() {
   const res = await fetch('/api/cost');
@@ -27,6 +28,15 @@ export default function CostAnalysisPage() {
     queryFn: async () => {
       const res = await fetch('/api/machines');
       if (!res.ok) throw new Error('Failed to fetch machines');
+      return res.json();
+    },
+  });
+
+  const { data: aiPrediction } = useQuery({
+    queryKey: ['ai-prediction'],
+    queryFn: async (): Promise<AIPrediction> => {
+      const res = await fetch('/api/ai-prediction');
+      if (!res.ok) throw new Error('Failed to fetch AI prediction');
       return res.json();
     },
   });
@@ -114,6 +124,22 @@ export default function CostAnalysisPage() {
             <div className="text-2xl font-bold">{Math.round(summary.averageCostPerMachine).toLocaleString()}円</div>
           </CardContent>
         </Card>
+        {aiPrediction && aiPrediction.leaseRecommendations.length > 0 && (
+          <Card className="border-2 border-green-300 bg-gradient-to-br from-green-50 to-emerald-50">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">推定リース収益（月額）</CardTitle>
+              <TrendingDown className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-700">
+                {aiPrediction.leaseRecommendations.reduce((sum, r) => sum + r.estimatedMonthlyRevenue, 0).toLocaleString()}円
+              </div>
+              <p className="text-xs text-green-600 mt-1">
+                年額: {(aiPrediction.leaseRecommendations.reduce((sum, r) => sum + r.estimatedMonthlyRevenue, 0) * 12).toLocaleString()}円
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

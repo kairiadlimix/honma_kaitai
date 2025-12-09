@@ -13,7 +13,9 @@ import {
   AlertTriangle,
   Calendar,
   Activity,
-  Sparkles
+  Sparkles,
+  TrendingDown,
+  ArrowRight
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { DashboardSummary, MonthlyOperationRate, AIPrediction } from '@/types';
@@ -145,6 +147,15 @@ export default function DashboardPage() {
           icon={DollarSign}
           color="orange"
         />
+        {aiPrediction && aiPrediction.leaseRecommendations.length > 0 && (
+          <KPICard
+            title="リース候補重機"
+            value={`${aiPrediction.leaseRecommendations.length}台`}
+            icon={TrendingDown}
+            color="green"
+            description={`推定月額収益: ${aiPrediction.leaseRecommendations.reduce((sum, r) => sum + r.estimatedMonthlyRevenue, 0).toLocaleString()}円`}
+          />
+        )}
       </div>
 
       {/* 月次稼働率グラフ */}
@@ -229,6 +240,61 @@ export default function DashboardPage() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* リース活用提案 */}
+      {aiPrediction && aiPrediction.leaseRecommendations.length > 0 && (
+        <div className="bg-gradient-to-r from-green-50 via-emerald-50 to-teal-50 rounded-xl border-2 border-green-300 shadow-lg p-6 md:p-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-3">
+              <TrendingDown className="h-8 w-8 md:h-10 md:w-10 text-green-600" />
+              <h2 className="text-2xl md:text-3xl font-bold text-green-900">リース活用提案</h2>
+            </div>
+            <div className="text-right">
+              <p className="text-sm md:text-base text-green-700 font-medium">推定月額収益</p>
+              <p className="text-2xl md:text-3xl font-bold text-green-900">
+                {aiPrediction.leaseRecommendations.reduce((sum, r) => sum + r.estimatedMonthlyRevenue, 0).toLocaleString()}円
+              </p>
+              <p className="text-sm md:text-base text-green-600 mt-1">
+                年額: {(aiPrediction.leaseRecommendations.reduce((sum, r) => sum + r.estimatedMonthlyRevenue, 0) * 12).toLocaleString()}円
+              </p>
+            </div>
+          </div>
+          <div className="bg-white rounded-xl p-4 md:p-6 shadow-md">
+            <p className="text-base md:text-lg text-gray-700 mb-4 font-medium">
+              稼働率が低い重機をリース化することで、遊休資産を収益化できます。
+            </p>
+            <div className="space-y-3 md:space-y-4">
+              {aiPrediction.leaseRecommendations.map((lease, index) => (
+                <div key={lease.machineId} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-green-200 hover:bg-green-50 transition-colors">
+                  <div className="flex items-center space-x-4 flex-1">
+                    <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                      <span className="text-green-700 font-bold">{index + 1}</span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-base md:text-lg font-semibold text-gray-900">{lease.machineId}</p>
+                      <p className="text-sm md:text-base text-gray-600">{lease.machineClass}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs md:text-sm text-gray-500">現在の稼働率</p>
+                      <p className="text-base md:text-lg font-bold text-orange-600">{lease.currentOperationRate.toFixed(1)}%</p>
+                    </div>
+                    <ArrowRight className="h-5 w-5 text-green-600 flex-shrink-0" />
+                    <div className="text-right">
+                      <p className="text-xs md:text-sm text-gray-500">推定月額収益</p>
+                      <p className="text-lg md:text-xl font-bold text-green-700">{lease.estimatedMonthlyRevenue.toLocaleString()}円</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 md:mt-6 pt-4 md:pt-6 border-t border-green-200">
+              <button className="w-full md:w-auto px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-md transition-colors text-base md:text-lg">
+                リース提案を送信
+              </button>
+            </div>
           </div>
         </div>
       )}
