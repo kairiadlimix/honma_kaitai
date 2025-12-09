@@ -88,14 +88,14 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">全社サマリー</h1>
-        <p className="text-gray-600">重機の稼働状況とコストの全体像</p>
+    <div className="space-y-8 md:space-y-10 p-4 md:p-6 lg:p-8">
+      <div className="mb-6 md:mb-8">
+        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-3 md:mb-4">全社サマリー</h1>
+        <p className="text-lg md:text-xl text-gray-600">重機の稼働状況とコストの全体像</p>
       </div>
 
       {/* KPIカード */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
         <KPICard
           title="総重機台数"
           value={`${summary.totalMachines}台`}
@@ -148,52 +148,64 @@ export default function DashboardPage() {
       </div>
 
       {/* 月次稼働率グラフ */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <TrendingUp className="h-5 w-5" />
+      <Card className="shadow-lg">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center space-x-3 text-2xl md:text-3xl font-bold text-gray-900">
+            <TrendingUp className="h-7 w-7 md:h-8 md:w-8 text-blue-600" />
             <span>月次稼働率推移</span>
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 md:p-6">
           {isLoadingRates ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="text-gray-500">データを読み込み中...</div>
+            <div className="flex items-center justify-center h-64 md:h-96">
+              <div className="text-lg md:text-xl text-gray-500">データを読み込み中...</div>
             </div>
           ) : monthlyRates && monthlyRates.length > 0 ? (
-            <ResponsiveContainer width="100%" height={400}>
-              <LineChart data={monthlyRates}>
-                <CartesianGrid strokeDasharray="3 3" />
+            <ResponsiveContainer width="100%" height={500}>
+              <LineChart data={monthlyRates} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis 
                   dataKey="monthLabel" 
                   angle={-45}
                   textAnchor="end"
-                  height={80}
+                  height={100}
                   interval={0}
+                  tick={{ fontSize: 14, fill: '#374151' }}
+                  stroke="#6b7280"
                 />
                 <YAxis 
                   domain={[0, 100]}
-                  label={{ value: '稼働率 (%)', angle: -90, position: 'insideLeft' }}
+                  label={{ value: '稼働率 (%)', angle: -90, position: 'insideLeft', style: { fontSize: 16, fontWeight: 'bold' } }}
+                  tick={{ fontSize: 14, fill: '#374151' }}
+                  stroke="#6b7280"
                 />
                 <Tooltip 
                   formatter={(value: number) => `${value}%`}
                   labelFormatter={(label) => label}
+                  contentStyle={{ 
+                    backgroundColor: 'white', 
+                    border: '2px solid #3b82f6', 
+                    borderRadius: '8px',
+                    fontSize: '16px',
+                    padding: '12px'
+                  }}
                 />
-                <Legend />
+                <Legend wrapperStyle={{ fontSize: '16px', paddingTop: '20px' }} />
                 <Line 
                   type="monotone" 
                   dataKey="operationRate" 
-                  stroke="#3B82F6" 
-                  strokeWidth={3}
+                  stroke="#2563eb" 
+                  strokeWidth={4}
                   name="稼働率"
-                  dot={{ r: 5 }}
-                  activeDot={{ r: 8 }}
+                  dot={{ r: 6, fill: '#2563eb', strokeWidth: 2, stroke: '#fff' }}
+                  activeDot={{ r: 10, fill: '#1d4ed8', strokeWidth: 3, stroke: '#fff' }}
+                  animationDuration={1000}
                 />
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex items-center justify-center h-64">
-              <div className="text-gray-500">データがありません</div>
+            <div className="flex items-center justify-center h-64 md:h-96">
+              <div className="text-lg md:text-xl text-gray-500">データがありません</div>
             </div>
           )}
         </CardContent>
@@ -201,17 +213,17 @@ export default function DashboardPage() {
 
       {/* AI予測コメント */}
       {aiPrediction && aiPrediction.comments.length > 0 && (
-        <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border-2 border-purple-200 p-6">
-          <div className="flex items-center space-x-2 mb-4">
-            <Sparkles className="h-6 w-6 text-purple-600" />
-            <h2 className="text-xl font-semibold text-purple-900">AI予測・推奨事項</h2>
+        <div className="bg-gradient-to-r from-purple-50 via-blue-50 to-indigo-50 rounded-xl border-2 border-purple-300 shadow-lg p-6 md:p-8">
+          <div className="flex items-center space-x-3 mb-6">
+            <Sparkles className="h-8 w-8 md:h-10 md:w-10 text-purple-600 animate-pulse" />
+            <h2 className="text-2xl md:text-3xl font-bold text-purple-900">AI予測・推奨事項</h2>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-4 md:space-y-5">
             {aiPrediction.comments.map((comment, index) => (
-              <div key={index} className="bg-white rounded-lg p-4 border-l-4 border-purple-500 shadow-sm">
-                <div className="flex items-start justify-between">
-                  <p className="text-gray-800 flex-1">{comment.message}</p>
-                  <span className="ml-4 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+              <div key={index} className="bg-white rounded-xl p-5 md:p-6 border-l-4 border-purple-500 shadow-md hover:shadow-lg transition-shadow">
+                <div className="flex items-start justify-between gap-4">
+                  <p className="text-base md:text-lg text-gray-800 flex-1 leading-relaxed font-medium">{comment.message}</p>
+                  <span className="ml-4 text-sm md:text-base text-purple-700 bg-purple-100 px-3 py-2 rounded-lg font-semibold whitespace-nowrap">
                     信頼度: {comment.confidence}%
                   </span>
                 </div>
@@ -222,28 +234,28 @@ export default function DashboardPage() {
       )}
 
       {/* アラート・通知 */}
-      <div className="bg-white rounded-lg border p-6">
-        <h2 className="text-xl font-semibold mb-4">アラート・通知</h2>
-        <div className="space-y-3">
-          <div className="flex items-center space-x-3 p-3 bg-red-50 rounded-lg">
-            <AlertTriangle className="h-5 w-5 text-red-500" />
+      <div className="bg-white rounded-xl border-2 shadow-lg p-6 md:p-8">
+        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6">アラート・通知</h2>
+        <div className="space-y-4 md:space-y-5">
+          <div className="flex items-center space-x-4 p-4 md:p-5 bg-red-50 rounded-xl border-l-4 border-red-500 shadow-md hover:shadow-lg transition-shadow">
+            <AlertTriangle className="h-7 w-7 md:h-8 md:w-8 text-red-600 flex-shrink-0" />
             <div>
-              <p className="font-medium text-red-900">故障リスクが高い重機</p>
-              <p className="text-sm text-red-700">{summary.highRiskMachines}台</p>
+              <p className="text-lg md:text-xl font-bold text-red-900">故障リスクが高い重機</p>
+              <p className="text-base md:text-lg text-red-700 font-semibold mt-1">{summary.highRiskMachines}台</p>
             </div>
           </div>
-          <div className="flex items-center space-x-3 p-3 bg-yellow-50 rounded-lg">
-            <Calendar className="h-5 w-5 text-yellow-500" />
+          <div className="flex items-center space-x-4 p-4 md:p-5 bg-yellow-50 rounded-xl border-l-4 border-yellow-500 shadow-md hover:shadow-lg transition-shadow">
+            <Calendar className="h-7 w-7 md:h-8 md:w-8 text-yellow-600 flex-shrink-0" />
             <div>
-              <p className="font-medium text-yellow-900">特自検期限が近い重機</p>
-              <p className="text-sm text-yellow-700">{summary.inspectionDeadlineMachines}台（1ヶ月以内）</p>
+              <p className="text-lg md:text-xl font-bold text-yellow-900">特自検期限が近い重機</p>
+              <p className="text-base md:text-lg text-yellow-700 font-semibold mt-1">{summary.inspectionDeadlineMachines}台（1ヶ月以内）</p>
             </div>
           </div>
-          <div className="flex items-center space-x-3 p-3 bg-orange-50 rounded-lg">
-            <Activity className="h-5 w-5 text-orange-500" />
+          <div className="flex items-center space-x-4 p-4 md:p-5 bg-orange-50 rounded-xl border-l-4 border-orange-500 shadow-md hover:shadow-lg transition-shadow">
+            <Activity className="h-7 w-7 md:h-8 md:w-8 text-orange-600 flex-shrink-0" />
             <div>
-              <p className="font-medium text-orange-900">稼働率が低い重機</p>
-              <p className="text-sm text-orange-700">{summary.lowOperationRateMachines}台（40%未満）</p>
+              <p className="text-lg md:text-xl font-bold text-orange-900">稼働率が低い重機</p>
+              <p className="text-base md:text-lg text-orange-700 font-semibold mt-1">{summary.lowOperationRateMachines}台（40%未満）</p>
             </div>
           </div>
         </div>
