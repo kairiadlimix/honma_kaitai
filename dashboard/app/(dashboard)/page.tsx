@@ -12,10 +12,11 @@ import {
   DollarSign,
   AlertTriangle,
   Calendar,
-  Activity
+  Activity,
+  Sparkles
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { DashboardSummary, MonthlyOperationRate } from '@/types';
+import { DashboardSummary, MonthlyOperationRate, AIPrediction } from '@/types';
 
 async function fetchDashboardSummary(): Promise<DashboardSummary> {
   const res = await fetch('/api/dashboard/summary');
@@ -33,6 +34,14 @@ async function fetchMonthlyOperationRate(): Promise<MonthlyOperationRate[]> {
   return res.json();
 }
 
+async function fetchAIPrediction(): Promise<AIPrediction> {
+  const res = await fetch('/api/ai-prediction');
+  if (!res.ok) {
+    throw new Error('Failed to fetch AI prediction');
+  }
+  return res.json();
+}
+
 export default function DashboardPage() {
   const { data: summary, isLoading, error } = useQuery({
     queryKey: ['dashboard-summary'],
@@ -44,6 +53,12 @@ export default function DashboardPage() {
     queryKey: ['monthly-operation-rate'],
     queryFn: fetchMonthlyOperationRate,
     refetchInterval: 30000,
+  });
+
+  const { data: aiPrediction, isLoading: isLoadingAI } = useQuery({
+    queryKey: ['ai-prediction'],
+    queryFn: fetchAIPrediction,
+    refetchInterval: 60000, // 1分ごとに更新
   });
 
   if (isLoading) {
@@ -111,6 +126,19 @@ export default function DashboardPage() {
           icon={TrendingUp}
           color="purple"
         />
+        {aiPrediction && (
+          <KPICard
+            title="AI予測: 次月稼働率"
+            value={`${aiPrediction.nextMonthOperationRate}%`}
+            icon={Sparkles}
+            color="purple"
+            trend={{
+              value: Math.abs(aiPrediction.nextMonthOperationRateChange),
+              isPositive: aiPrediction.nextMonthOperationRateChange >= 0,
+            }}
+            description={`前月比 ${aiPrediction.nextMonthOperationRateChange >= 0 ? '+' : ''}${aiPrediction.nextMonthOperationRateChange.toFixed(1)}%`}
+          />
+        )}
         <KPICard
           title="今月の総コスト"
           value={`${summary.monthlyTotalCost.toLocaleString()}円`}
@@ -170,6 +198,28 @@ export default function DashboardPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* AI予測コメント */}
+      {aiPrediction && aiPrediction.comments.length > 0 && (
+        <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border-2 border-purple-200 p-6">
+          <div className="flex items-center space-x-2 mb-4">
+            <Sparkles className="h-6 w-6 text-purple-600" />
+            <h2 className="text-xl font-semibold text-purple-900">AI予測・推奨事項</h2>
+          </div>
+          <div className="space-y-3">
+            {aiPrediction.comments.map((comment, index) => (
+              <div key={index} className="bg-white rounded-lg p-4 border-l-4 border-purple-500 shadow-sm">
+                <div className="flex items-start justify-between">
+                  <p className="text-gray-800 flex-1">{comment.message}</p>
+                  <span className="ml-4 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                    信頼度: {comment.confidence}%
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* アラート・通知 */}
       <div className="bg-white rounded-lg border p-6">

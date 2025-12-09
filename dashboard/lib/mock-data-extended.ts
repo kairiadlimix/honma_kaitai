@@ -1,6 +1,6 @@
 // 拡張モックデータ（重機一覧・ランキング用）
 
-import { Machine, OperationHour, Maintenance, MachineRiskAnalysis, RiskFactor, ManufacturerRiskTrend } from '@/types';
+import { Machine, OperationHour, Maintenance, MachineRiskAnalysis, RiskFactor, ManufacturerRiskTrend, AIPrediction, AIPredictionComment, AIMalfunctionScore } from '@/types';
 
 // 既存のモックデータをインポート
 import { mockMachines } from './mock-data';
@@ -434,6 +434,164 @@ export function calculateManufacturerRiskTrends(): ManufacturerRiskTrend[] {
       highRiskCount,
       totalCount: manufacturerMachines.length,
       machines: manufacturerMachines,
+    };
+  });
+}
+
+// AI予測データを生成
+export function generateAIPrediction(): AIPrediction {
+  const today = new Date();
+  const riskAnalyses = generateMachineRiskAnalyses();
+  const summaries = calculateMachineSummaries();
+  
+  // 現在の稼働率を計算
+  const currentOperationRate = summaries.reduce((sum: number, s: any) => sum + s.operationRate, 0) / summaries.length;
+  
+  // 次月稼働率予測（現在の稼働率に基づいて±5%の変動）
+  const nextMonthOperationRate = Math.max(50, Math.min(80, currentOperationRate + (Math.random() - 0.5) * 10));
+  const nextMonthOperationRateChange = nextMonthOperationRate - currentOperationRate;
+  
+  // 次月コスト予測（年間コストから月次コストを計算し、±10%の変動）
+  const currentYearlyCost = summaries.reduce((sum: number, s: any) => sum + s.yearlyCost, 0);
+  const currentMonthlyCost = currentYearlyCost / 12; // 年間コストを12で割って月次コストを計算
+  const nextMonthCost = currentMonthlyCost * (0.9 + Math.random() * 0.2);
+  
+  // リース候補重機（稼働率40%未満）
+  const leaseRecommendations = summaries
+    .filter((s: any) => s.operationRate < 40)
+    .slice(0, 3)
+    .map((s: any) => ({
+      machineId: s.machine.machineId,
+      machineClass: s.machine.machineClass,
+      currentOperationRate: s.operationRate,
+      estimatedMonthlyRevenue: Math.floor(50000 + Math.random() * 200000), // 5万円〜25万円
+    }));
+  
+  // AI予測コメントを生成
+  const comments: AIPredictionComment[] = [];
+  
+  // 稼働率予測コメント
+  if (nextMonthOperationRateChange > 2) {
+    comments.push({
+      type: 'operation',
+      message: `AI分析によると、来月の稼働率は${nextMonthOperationRate.toFixed(1)}%と予測されます（前月比+${nextMonthOperationRateChange.toFixed(1)}%）。好調な稼働状況が続く見込みです。`,
+      confidence: 85,
+      timestamp: today.toISOString(),
+    });
+  } else if (nextMonthOperationRateChange < -2) {
+    comments.push({
+      type: 'operation',
+      message: `AI分析によると、来月の稼働率は${nextMonthOperationRate.toFixed(1)}%と予測されます（前月比${nextMonthOperationRateChange.toFixed(1)}%）。稼働率低下の要因を確認することを推奨します。`,
+      confidence: 82,
+      timestamp: today.toISOString(),
+    });
+  } else {
+    comments.push({
+      type: 'operation',
+      message: `AI分析によると、来月の稼働率は${nextMonthOperationRate.toFixed(1)}%と予測されます。現在の稼働状況が維持される見込みです。`,
+      confidence: 88,
+      timestamp: today.toISOString(),
+    });
+  }
+  
+  // リース提案コメント
+  if (leaseRecommendations.length > 0) {
+    comments.push({
+      type: 'lease',
+      message: `稼働率が低い重機${leaseRecommendations.length}台がリース候補として推奨されます。推定月額収益: ${leaseRecommendations.reduce((sum, r) => sum + r.estimatedMonthlyRevenue, 0).toLocaleString()}円`,
+      confidence: 75,
+      timestamp: today.toISOString(),
+    });
+  }
+  
+  // コスト予測コメント
+  const costChange = ((nextMonthCost - currentMonthlyCost) / currentMonthlyCost) * 100;
+  if (costChange > 5) {
+    comments.push({
+      type: 'cost',
+      message: `AI予測によると、来月のコストは${nextMonthCost.toLocaleString()}円と予測されます（前月比+${costChange.toFixed(1)}%）。コスト増加の要因を確認することを推奨します。`,
+      confidence: 80,
+      timestamp: today.toISOString(),
+    });
+  } else if (costChange < -5) {
+    comments.push({
+      type: 'cost',
+      message: `AI予測によると、来月のコストは${nextMonthCost.toLocaleString()}円と予測されます（前月比${costChange.toFixed(1)}%）。コスト削減効果が期待できます。`,
+      confidence: 78,
+      timestamp: today.toISOString(),
+    });
+  }
+  
+  // 故障リスクコメント
+  const highRiskCount = riskAnalyses.filter(r => r.riskScore >= 4).length;
+  if (highRiskCount > 0) {
+    comments.push({
+      type: 'risk',
+      message: `故障リスクが高い重機が${highRiskCount}台検出されました。早期のメンテナンスまたは買い替え検討を推奨します。`,
+      confidence: 90,
+      timestamp: today.toISOString(),
+    });
+  }
+  
+  return {
+    nextMonthOperationRate: Math.round(nextMonthOperationRate * 10) / 10,
+    nextMonthOperationRateChange: Math.round(nextMonthOperationRateChange * 10) / 10,
+    nextMonthCost: Math.round(nextMonthCost),
+    leaseRecommendations,
+    comments,
+  };
+}
+
+// AI不調スコアを生成
+export function generateAIMalfunctionScores(): AIMalfunctionScore[] {
+  const riskAnalyses = generateMachineRiskAnalyses();
+  const malfunctionTypes = [
+    'オイル漏れ',
+    'アイドリング不安定',
+    'エンジン異音',
+    '油圧系統の不調',
+    'ブレーキ効き不良',
+    'アタッチメント動作不良',
+    '冷却系統の不調',
+    '電装系統の不調',
+    '走行系統の不調',
+    'その他不調',
+  ];
+  
+  return riskAnalyses.map(risk => {
+    // リスクスコアに基づいて不調スコアを計算（0-100）
+    const baseScore = risk.riskScore * 20; // 1-5スコアを0-100に変換
+    const variation = (Math.random() - 0.5) * 20; // ±10の変動
+    const score = Math.max(0, Math.min(100, baseScore + variation));
+    
+    // 不調要因をランダムに選択（1-3個）
+    const factorCount = Math.floor(Math.random() * 3) + 1;
+    const selectedFactors = malfunctionTypes
+      .sort(() => Math.random() - 0.5)
+      .slice(0, factorCount)
+      .map(factor => ({
+        factor,
+        severity: score > 70 ? 'high' as const : score > 40 ? 'medium' as const : 'low' as const,
+        detectedDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      }));
+    
+    // AI推奨アクションを生成
+    let aiRecommendation = '';
+    if (score >= 80) {
+      aiRecommendation = '緊急メンテナンスまたは買い替え検討を強く推奨します。故障リスクが非常に高い状態です。';
+    } else if (score >= 60) {
+      aiRecommendation = '早期のメンテナンスを推奨します。不調要因の解消により、故障リスクを低減できます。';
+    } else if (score >= 40) {
+      aiRecommendation = '定期的な点検を継続し、不調の兆候に注意してください。';
+    } else {
+      aiRecommendation = '現在の状態は良好です。定期的なメンテナンスを継続してください。';
+    }
+    
+    return {
+      machineId: risk.machineId,
+      score: Math.round(score),
+      factors: selectedFactors,
+      aiRecommendation,
     };
   });
 }

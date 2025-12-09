@@ -2,9 +2,9 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertTriangle, TrendingUp, Wrench, Calendar, BarChart3 } from 'lucide-react';
+import { AlertTriangle, TrendingUp, Wrench, Calendar, BarChart3, Sparkles } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
-import { MachineRiskAnalysis, ManufacturerRiskTrend } from '@/types';
+import { MachineRiskAnalysis, ManufacturerRiskTrend, AIMalfunctionScore } from '@/types';
 
 interface RiskAnalysisResponse {
   machines: MachineRiskAnalysis[];
@@ -21,6 +21,14 @@ async function fetchRiskAnalysis(): Promise<RiskAnalysisResponse> {
   return res.json();
 }
 
+async function fetchAIMalfunctionScores(): Promise<AIMalfunctionScore[]> {
+  const res = await fetch('/api/ai-malfunction-scores');
+  if (!res.ok) {
+    throw new Error('Failed to fetch AI malfunction scores');
+  }
+  return res.json();
+}
+
 const COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#DC2626'];
 
 export default function RiskAnalysisPage() {
@@ -28,6 +36,12 @@ export default function RiskAnalysisPage() {
     queryKey: ['risk-analysis'],
     queryFn: fetchRiskAnalysis,
     refetchInterval: 30000,
+  });
+
+  const { data: aiMalfunctionScores, isLoading: isLoadingAI } = useQuery({
+    queryKey: ['ai-malfunction-scores'],
+    queryFn: fetchAIMalfunctionScores,
+    refetchInterval: 60000,
   });
 
   if (isLoading) {
@@ -51,6 +65,14 @@ export default function RiskAnalysisPage() {
   }
 
   const { machines, manufacturerTrends, highRiskMachines, topRiskMachines } = data;
+  
+  // AI不調スコアをマシンIDでマッピング
+  const aiScoreMap = new Map<string, AIMalfunctionScore>();
+  if (aiMalfunctionScores) {
+    aiMalfunctionScores.forEach(score => {
+      aiScoreMap.set(score.machineId, score);
+    });
+  }
 
   // メーカー別平均リスクスコアのグラフデータ
   const manufacturerChartData = manufacturerTrends.map(trend => ({
@@ -126,43 +148,79 @@ export default function RiskAnalysisPage() {
                   <th className="text-left p-2">メーカー</th>
                   <th className="text-left p-2">重機クラス</th>
                   <th className="text-left p-2">リスクスコア</th>
+                  <th className="text-left p-2">AI不調スコア</th>
                   <th className="text-left p-2">年式</th>
                   <th className="text-left p-2">稼働率</th>
-                  <th className="text-left p-2">推奨アクション</th>
+                  <th className="text-left p-2">AI推奨アクション</th>
                 </tr>
               </thead>
               <tbody>
-                {topRiskMachines.map((machine, index) => (
-                  <tr key={machine.machineId} className="border-b hover:bg-gray-50">
-                    <td className="p-2">{index + 1}</td>
-                    <td className="p-2 font-medium">{machine.machineId}</td>
-                    <td className="p-2">{machine.manufacturer}</td>
-                    <td className="p-2">{machine.machineClass}</td>
-                    <td className="p-2">
-                      <span className={`font-bold ${
-                        machine.riskScore >= 5 ? 'text-red-600' :
-                        machine.riskScore >= 4 ? 'text-orange-600' :
-                        machine.riskScore >= 3 ? 'text-yellow-600' :
-                        'text-gray-600'
-                      }`}>
-                        {'★'.repeat(machine.riskScore)}{'☆'.repeat(5 - machine.riskScore)}
-                      </span>
-                    </td>
-                    <td className="p-2">{machine.year}年</td>
-                    <td className="p-2">{machine.operationRate.toFixed(1)}%</td>
-                    <td className="p-2">
-                      <span className={`px-2 py-1 rounded text-xs ${
-                        machine.recommendedAction === 'replacement' ? 'bg-red-100 text-red-800' :
-                        machine.recommendedAction === 'maintenance' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-blue-100 text-blue-800'
-                      }`}>
-                        {machine.recommendedAction === 'replacement' ? '買い替え検討' :
-                         machine.recommendedAction === 'maintenance' ? '整備推奨' :
-                         '監視継続'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {topRiskMachines.map((machine, index) => {
+                  const aiScore = aiScoreMap.get(machine.machineId);
+                  return (
+                    <tr key={machine.machineId} className="border-b hover:bg-gray-50">
+                      <td className="p-2">{index + 1}</td>
+                      <td className="p-2 font-medium">{machine.machineId}</td>
+                      <td className="p-2">{machine.manufacturer}</td>
+                      <td className="p-2">{machine.machineClass}</td>
+                      <td className="p-2">
+                        <span className={`font-bold ${
+                          machine.riskScore >= 5 ? 'text-red-600' :
+                          machine.riskScore >= 4 ? 'text-orange-600' :
+                          machine.riskScore >= 3 ? 'text-yellow-600' :
+                          'text-gray-600'
+                        }`}>
+                          {'★'.repeat(machine.riskScore)}{'☆'.repeat(5 - machine.riskScore)}
+                        </span>
+                      </td>
+                      <td className="p-2">
+                        {aiScore ? (
+                          <div className="flex items-center space-x-1">
+                            <Sparkles className="h-4 w-4 text-purple-600" />
+                            <span className={`font-bold ${
+                              aiScore.score >= 80 ? 'text-red-600' :
+                              aiScore.score >= 60 ? 'text-orange-600' :
+                              aiScore.score >= 40 ? 'text-yellow-600' :
+                              'text-green-600'
+                            }`}>
+                              {aiScore.score}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                      <td className="p-2">{machine.year}年</td>
+                      <td className="p-2">{machine.operationRate.toFixed(1)}%</td>
+                      <td className="p-2">
+                        {aiScore ? (
+                          <div className="space-y-1">
+                            <span className={`px-2 py-1 rounded text-xs ${
+                              machine.recommendedAction === 'replacement' ? 'bg-red-100 text-red-800' :
+                              machine.recommendedAction === 'maintenance' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-blue-100 text-blue-800'
+                            }`}>
+                              {machine.recommendedAction === 'replacement' ? '買い替え検討' :
+                               machine.recommendedAction === 'maintenance' ? '整備推奨' :
+                               '監視継続'}
+                            </span>
+                            <p className="text-xs text-purple-700 italic">{aiScore.aiRecommendation}</p>
+                          </div>
+                        ) : (
+                          <span className={`px-2 py-1 rounded text-xs ${
+                            machine.recommendedAction === 'replacement' ? 'bg-red-100 text-red-800' :
+                            machine.recommendedAction === 'maintenance' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-blue-100 text-blue-800'
+                          }`}>
+                            {machine.recommendedAction === 'replacement' ? '買い替え検討' :
+                             machine.recommendedAction === 'maintenance' ? '整備推奨' :
+                             '監視継続'}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -222,6 +280,33 @@ export default function RiskAnalysisPage() {
                   </div>
                 </div>
 
+                {/* AI不調スコア */}
+                {aiScoreMap.has(machine.machineId) && (
+                  <div className="mb-3 bg-purple-50 rounded-lg p-3 border-l-4 border-purple-500">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Sparkles className="h-5 w-5 text-purple-600" />
+                      <p className="text-sm font-semibold text-purple-900">AI不調スコア: {aiScoreMap.get(machine.machineId)?.score}点</p>
+                    </div>
+                    <p className="text-sm text-purple-800 mb-2 italic">{aiScoreMap.get(machine.machineId)?.aiRecommendation}</p>
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-purple-700">検出された不調要因:</p>
+                      {aiScoreMap.get(machine.machineId)?.factors.map((factor, idx) => (
+                        <div key={idx} className="flex items-center space-x-2 text-xs">
+                          <span className={`w-2 h-2 rounded-full ${
+                            factor.severity === 'high' ? 'bg-red-500' :
+                            factor.severity === 'medium' ? 'bg-yellow-500' :
+                            'bg-green-500'
+                          }`}></span>
+                          <span>{factor.factor}</span>
+                          {factor.detectedDate && (
+                            <span className="text-gray-500">({factor.detectedDate})</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* リスク要因 */}
                 <div className="mb-3">
                   <p className="text-sm font-medium text-gray-700 mb-2">リスク要因（予測に使用した情報）:</p>
@@ -256,12 +341,15 @@ export default function RiskAnalysisPage() {
                     <p className="font-medium">{machine.daysSinceLastMaintenance}日経過</p>
                   </div>
                   {machine.predictedMaintenanceDate && (
-                    <div>
-                      <p className="text-gray-500">次回メンテ予測</p>
-                      <p className="font-medium">
+                    <div className="bg-purple-50 rounded-lg p-2 border border-purple-200">
+                      <div className="flex items-center space-x-1 mb-1">
+                        <Sparkles className="h-4 w-4 text-purple-600" />
+                        <p className="text-gray-700 font-semibold text-sm">AI予測: 次回メンテ</p>
+                      </div>
+                      <p className="font-bold text-purple-900">
                         {machine.predictedMaintenanceDays}日後
                         <br />
-                        <span className="text-xs">({machine.predictedMaintenanceDate})</span>
+                        <span className="text-xs font-normal">({machine.predictedMaintenanceDate})</span>
                       </p>
                     </div>
                   )}

@@ -99,3 +99,37 @@ export interface ManufacturerRiskTrend {
   machines: MachineRiskAnalysis[];
 }
 
+// AI予測コメント
+export interface AIPredictionComment {
+  type: 'operation' | 'cost' | 'risk' | 'lease' | 'maintenance';
+  message: string;
+  confidence: number; // 0-100
+  timestamp: string;
+}
+
+// AI予測データ
+export interface AIPrediction {
+  nextMonthOperationRate: number; // 次月稼働率予測
+  nextMonthOperationRateChange: number; // 前月比変化
+  nextMonthCost: number; // 次月コスト予測
+  leaseRecommendations: {
+    machineId: string;
+    machineClass: string;
+    currentOperationRate: number;
+    estimatedMonthlyRevenue: number; // 推定月額リース収益
+  }[];
+  comments: AIPredictionComment[];
+}
+
+// AI不調スコア
+export interface AIMalfunctionScore {
+  machineId: string;
+  score: number; // 0-100（100が最も不調）
+  factors: {
+    factor: string; // 不調要因名（オイル漏れ、アイドリング不安定など）
+    severity: 'high' | 'medium' | 'low';
+    detectedDate?: string;
+  }[];
+  aiRecommendation: string; // AI推奨アクション（自然言語）
+}
+
